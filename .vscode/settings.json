@@ -1,0 +1,26 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "orders_db",
+            "database": "orders_db",
+            "username": "postgres",
+            "password": "0000"
+        },
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "payments_db",
+            "database": "payments_db",
+            "password": "0000",
+            "username": "postgres"
+        }
+    ]
+}

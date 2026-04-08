@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AP2 Assignment 1 — Architecture Diagram</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f8f9fa;
+    color: #222;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    color: #333;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+  .diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .row, .col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .box {
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid #ccc;
+    color: #222;
+    margin: 4px 0;
+    width: 220px;
+  }
+  .service {
+    width: 260px;
+    background: #f4f4f4;
+    border: 1px solid #bbb;
+  }
+  .db {
+    width: 200px;
+    background: #f4f4f4;
+    border: 1px solid #bbb;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .svc-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #222;
+  }
+  .layer {
+    background: #e9ecef;
+    border-radius: 4px;
+    padding: 5px 8px;
+    margin: 2px 0;
+    font-size: 11px;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .layer-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: #ddd;
+    color: #555;
+  }
+  .port-label {
+    font-size: 10px;
+    color: #888;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2px 0;
+  }
+  .arrow-line {
+    width: 2px;
+    background: #bbb;
+  }
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+  }
+  .arrow-head.down {
+    border-top: 8px solid #bbb;
+  }
+  .arrow-head.up {
+    border-bottom: 8px solid #bbb;
+  }
+  .arrow-label {
+    font-size: 10px;
+    color: #888;
+    white-space: nowrap;
+    margin: 0 8px;
+  }
+  .arrow-h {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .arrow-h-line {
+    height: 2px;
+    background: #bbb;
+  }
+  .arrow-h-head {
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 8px solid #bbb;
+  }
+  .legend {
+    margin-top: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #888;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: #bbb;
+  }
+  .rules {
+    margin-top: 32px;
+    max-width: 760px;
+    width: 100%;
+  }
+  .rules h2 {
+    font-size: 15px;
+    color: #333;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  th {
+    background: #f4f4f4;
+    color: #555;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+    vertical-align: top;
+  }
+  tr:hover td {
+    background: #f4f4f4;
+  }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    background: #ddd;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<h1>AP2 Assignment 1 — Architecture Diagram</h1>
+<p class="subtitle">Online Store · Order &amp; Payment Microservices · Clean Architecture · REST Communication</p>
+
+<div class="diagram">
+
+  <!-- Client -->
+  <div class="box client"> &nbsp;Client (curl / Postman / Browser)</div>
+
+  <!-- Arrow down to split -->
+  <div style="display:flex;align-items:flex-start;gap:120px;margin:0;">
+    <div class="arrow-down"><div class="arrow-line" style="height:24px"></div><div class="arrow-head down"></div><div class="arrow-label" style="font-size:10px;color:#388bfd">POST /orders<br>GET /orders/:id<br>PATCH /orders/:id/cancel</div></div>
+    <div style="width:0"></div>
+  </div>
+
+  <!-- Two services side by side -->
+  <div style="display:flex;align-items:flex-start;gap:60px;margin-top:8px;">
+
+    <!-- Order Service -->
+    <div class="col">
+      <div class="box service order-svc">
+        <div class="svc-title"> Order Service &nbsp;<span style="font-size:11px;color:#8b949e">:8080</span></div>
+        <div class="layer"><span>Handler (Gin)</span><span class="layer-tag tag-delivery">DELIVERY</span></div>
+        <div class="layer"><span>OrderUseCase</span><span class="layer-tag tag-usecase">USE CASE</span></div>
+        <div class="layer"><span>Order · Errors · Ports</span><span class="layer-tag tag-domain">DOMAIN</span></div>
+        <div class="layer"><span>PostgresOrderRepository</span><span class="layer-tag tag-repo">REPOSITORY</span></div>
+        <div class="layer"><span>HTTPPaymentClient</span><span class="layer-tag tag-infra">HTTP ADAPTER</span></div>
+        <div class="port-label">🔌 depends on interfaces, not concrete types</div>
+      </div>
+
+      <!-- Arrow to DB -->
+      <div class="arrow-down" style="margin:4px 0">
+        <div class="arrow-line" style="height:20px"></div>
+        <div class="arrow-head down"></div>
+      </div>
+
+      <div class="box db orders-db"> orders_db<br><span style="font-size:10px;font-weight:400">PostgreSQL · port 5432</span></div>
+    </div>
+
+    <!-- REST arrow between services -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:220px;padding-top:80px">
+      <div style="font-size:10px;color:#f0883e;margin-bottom:4px;white-space:nowrap">POST /payments</div>
+      <div style="display:flex;align-items:center;">
+        <div style="height:2px;width:50px;background:#f0883e;"></div>
+        <div style="width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid #f0883e;"></div>
+      </div>
+      <div style="font-size:10px;color:#8b949e;margin-top:4px;white-space:nowrap">⏱ 2s timeout</div>
+      <div style="font-size:10px;color:#8b949e;white-space:nowrap">→ 503 on failure</div>
+    </div>
+
+    <!-- Payment Service -->
+    <div class="col">
+      <div class="box service pay-svc">
+        <div class="svc-title"> Payment Service &nbsp;<span style="font-size:11px;color:#8b949e">:8081</span></div>
+        <div class="layer"><span>Handler (Gin)</span><span class="layer-tag tag-delivery">DELIVERY</span></div>
+        <div class="layer"><span>PaymentUseCase</span><span class="layer-tag tag-usecase">USE CASE</span></div>
+        <div class="layer"><span>Payment · Errors · Ports</span><span class="layer-tag tag-domain">DOMAIN</span></div>
+        <div class="layer"><span>PostgresPaymentRepository</span><span class="layer-tag tag-repo">REPOSITORY</span></div>
+        <div style="height:32px"></div><!-- spacer to align with order service -->
+        <div class="port-label">🔌 independent domain — no shared models</div>
+      </div>
+
+      <div class="arrow-down" style="margin:4px 0">
+        <div class="arrow-line" style="height:20px"></div>
+        <div class="arrow-head down"></div>
+      </div>
+
+      <div class="box db payments-db"> payments_db<br><span style="font-size:10px;font-weight:400">PostgreSQL · port 5433</span></div>
+    </div>
+
+  </div>
+
+</div><!-- /diagram -->
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"> Order Service boundary</div>
+  <div class="legend-item"> Payment Service boundary</div>
+  <div class="legend-item"> REST call (2s timeout)</div>
+  <div class="legend-item"> Dedicated database (no sharing)</div>
+</div>
+
+<!-- Business Rules Table -->
+<div style="display:flex;justify-content:center;margin-top:40px;">
+<div class="rules">
+  <h2>Business Rules &amp; Architecture Decisions</h2>
+  <table>
+    <tr>
+      <th>Rule</th><th>Where Enforced</th><th>Detail</th>
+    </tr>
+    <tr>
+      <td>Amount stored as <code>int64</code></td>
+      <td><span class="pill pill-red">DOMAIN</span></td>
+      <td>All amounts in cents. <code>BIGINT</code> in PostgreSQL. No <code>float64</code> anywhere.</td>
+    </tr>
+    <tr>
+      <td>Amount must be &gt; 0</td>
+      <td><span class="pill pill-green">USE CASE</span></td>
+      <td>Validated in <code>Order.Validate()</code> and Gin binding. Returns 400.</td>
+    </tr>
+    <tr>
+      <td>Only Pending orders can be cancelled</td>
+      <td><span class="pill pill-red">DOMAIN</span></td>
+      <td><code>Order.CanBeCancelled()</code> — returns 409 Conflict if Paid.</td>
+    </tr>
+    <tr>
+      <td>Amount &gt; 100,000 cents → Declined</td>
+      <td><span class="pill pill-green">USE CASE</span></td>
+      <td>Payment limit enforced in <code>PaymentUseCase.Authorize()</code>.</td>
+    </tr>
+    <tr>
+      <td>Payment timeout = 2 seconds</td>
+      <td><span class="pill pill-blue">DELIVERY</span></td>
+      <td><code>context.WithTimeout(2s)</code> in <code>OrderHandler.CreateOrder()</code>. Returns 503.</td>
+    </tr>
+    <tr>
+      <td>Database per service</td>
+      <td>Infrastructure</td>
+      <td><code>orders_db</code> and <code>payments_db</code> are entirely separate Postgres instances.</td>
+    </tr>
+    <tr>
+      <td>No shared code / models</td>
+      <td>Architecture</td>
+      <td>Each service has its own <code>internal/domain</code>. No common package.</td>
+    </tr>
+    <tr>
+      <td>Idempotency (Bonus)</td>
+      <td><span class="pill pill-green">USE CASE</span></td>
+      <td><code>Idempotency-Key</code> header. UNIQUE constraint in DB. Safe retries.</td>
+    </tr>
+    <tr>
+      <td>Composition Root / Manual DI</td>
+      <td><code>main.go</code></td>
+      <td>All dependencies wired by hand in <code>main.go</code>. No DI framework.</td>
+    </tr>
+  </table>
+</div>
+</div>
+
+</body>
+</html>
