@@ -5,34 +5,43 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
 )
 
-// Config holds the service configuration parameters
 type Config struct {
-	Port           string
-	DatabaseURL    string
-	PaymentBaseURL string
+	HTTPPort           string
+	GRPCPort           string
+	DatabaseURL        string
+	PaymentGRPCAddr    string
+	PaymentCallTimeout time.Duration
 }
 
 func LoadConfig() Config {
 	return Config{
-		Port:           getEnv("PORT", "8080"),
-		DatabaseURL:    getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/orders_db?sslmode=disable"),
-		PaymentBaseURL: getEnv("PAYMENT_SERVICE_URL", "http://localhost:8081"),
+		HTTPPort:           getEnv("PORT", "8080"),
+		GRPCPort:           getEnv("ORDER_GRPC_PORT", "50052"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/orders_db?sslmode=disable"),
+		PaymentGRPCAddr:    getEnv("PAYMENT_GRPC_ADDR", "localhost:50051"),
+		PaymentCallTimeout: getEnvDuration("PAYMENT_CALL_TIMEOUT", 2*time.Second),
 	}
 }
 
-// NewDB opens and verifies a PostgreSQL connection.
 func NewDB(databaseURL string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
+
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(30 * time.Minute)
+
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
+
 	log.Println("[order-service] database connection established")
 	return db, nil
 }
@@ -42,4 +51,17 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getEnvDuration(key string, fallback time.Duration) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+
+	parsed, err := time.ParseDuration(raw)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
