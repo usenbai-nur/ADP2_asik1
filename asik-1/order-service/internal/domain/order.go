@@ -2,7 +2,6 @@ package domain
 
 import "time"
 
-// Order represents an order in the online store.
 type Order struct {
 	ID             string
 	CustomerID     string
@@ -14,7 +13,6 @@ type Order struct {
 	UpdatedAt      time.Time
 }
 
-// Allowed order statuses.
 const (
 	StatusPending   = "Pending"
 	StatusPaid      = "Paid"
@@ -22,7 +20,6 @@ const (
 	StatusCancelled = "Cancelled"
 )
 
-// Validate enforces order invariants.
 func (o *Order) Validate() error {
 	if o.CustomerID == "" {
 		return ErrInvalidCustomerID
@@ -36,7 +33,12 @@ func (o *Order) Validate() error {
 	return nil
 }
 
-// CanBeCancelled returns true only when the order is still Pending.
 func (o *Order) CanBeCancelled() bool {
 	return o.Status == StatusPending
+}
+
+type OrderStatusEvent struct {
+	OrderID   string
+	Status    string
+	UpdatedAt time.Time
 }
