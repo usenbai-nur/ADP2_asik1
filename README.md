@@ -18,10 +18,11 @@ This project is a migration of Assignment 1 from REST-based internal communicati
 
 ### Proto repository
 - `ADP2_asik2_protos`
+[ADP2_asik2_protos](https://github.com/usenbai-nur/ADP2_asik2_protos)
 
 ### Generated code repository
 - `ADP2_asik2_generated`
-
+[ADP2_asik2_generated](https://github.com/usenbai-nur/ADP2_asik2_generated)
 ## Architecture
 ### Services
 #### Order Service
