@@ -1,0 +1,32 @@
+# .env
+
+order-service/.env
+payment-service/.env
+
+# editor folder
+.vscode/
+
+# build / binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+build/
+
+# go modules
+vendor/
+
+#logs
+*.log
+
+# os files
+.DS_Store
+Thumbs.db
+
+# temporary files
+tmp/
+temp/
