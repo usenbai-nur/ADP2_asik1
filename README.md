@@ -66,3 +66,91 @@ Example request:
   "item_name": "Keyboard",
   "amount": 15000
 }
+```
+
+### Get Order
+
+`GET /orders/{id}`
+
+### Cancel Order
+
+`PATCH /orders/{id}/cancel`
+
+### Order Stats
+
+`GET /orders/stats`
+
+### Payment Service gRPC API
+
+`ProcessPayment`
+- Request: PaymentRequest
+- Response: PaymentResponse
+
+`GetPaymentByOrderID`
+- Request: GetPaymentByOrderIDRequest
+- Response: PaymentResponse
+
+### Order Streaming API (gRPC)
+`SubscribeToOrderUpdates`
+- Request: OrderRequest
+- Response: stream OrderStatusUpdate
+
+## Environment Variables
+
+`Order Service`
+```json
+PORT=8080
+ORDER_GRPC_PORT=50052
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/orders_db?sslmode=disable
+PAYMENT_GRPC_ADDR=localhost:50051
+PAYMENT_CALL_TIMEOUT=2s
+```
+
+`Payment Service`
+```json
+GRPC_PORT=50051
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/payments_db?sslmode=disable
+```
+## How to Run
+1. Start Payment Service
+```json
+cd payment-service
+go run ./cmd/payment-service
+```
+2. Start Order Service
+```json
+cd order-service
+go run ./cmd/order-service
+```
+3. Run Streaming Client
+```json
+cd order-service
+go run ./scripts/order_stream_client <order-id>
+```
+
+## Business Rules
+- Money stored as int64
+- Amount must be > 0
+- Orders > 100000 are declined
+- Paid orders cannot be cancelled
+- Timeout used for payment calls
+- Streaming reflects real DB updates
+
+## Bonus
+
+Payment Service includes a gRPC interceptor:
+
+- logs method
+- logs duration
+- logs errors
+
+`Evidence`
+
+See docs/ folder:
+
+- architecture diagram
+- gRPC calls
+- streaming output
+- GitHub Actions
+- generated repo
+
