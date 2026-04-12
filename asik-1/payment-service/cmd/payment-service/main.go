@@ -1,41 +1,70 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
+	"net"
+	"os/signal"
+	"syscall"
+	"time"
+
+	paymentv1 "github.com/usenbai-nur/ADP2_asik2_generated/payment/v1"
 
 	"github.com/ap2/payment-service/internal/app"
 	"github.com/ap2/payment-service/internal/repository"
-	transportHTTP "github.com/ap2/payment-service/internal/transport/http"
+	transportGRPC "github.com/ap2/payment-service/internal/transport/grpc"
 	"github.com/ap2/payment-service/internal/usecase"
-	"github.com/gin-gonic/gin"
+	grpcpkg "google.golang.org/grpc"
 )
 
 func main() {
 	cfg := app.LoadConfig()
 
-	// Database 
 	db, err := app.NewDB(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("[payment-service] failed to connect to database: %v", err)
 	}
 	defer db.Close()
-	// Dependency injection 
-	paymentRepo := repository.NewPostgresPaymentRepository(db)
 
+	paymentRepo := repository.NewPostgresPaymentRepository(db)
 	paymentUC := usecase.NewPaymentUseCase(paymentRepo)
 
-	paymentHandler := transportHTTP.NewPaymentHandler(paymentUC)
+	listener, err := net.Listen("tcp", ":"+cfg.GRPCPort)
+	if err != nil {
+		log.Fatalf("[payment-service] failed to listen grpc: %v", err)
+	}
 
-	// Router
-	router := gin.Default()
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"service": "payment-service", "status": "ok"})
-	})
-	paymentHandler.RegisterRoutes(router)
+	grpcServer := grpcpkg.NewServer(
+		grpcpkg.UnaryInterceptor(transportGRPC.LoggingInterceptor()),
+	)
 
-	log.Printf("[payment-service] starting on :%s", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("[payment-service] server error: %v", err)
+	paymentServer := transportGRPC.NewPaymentServer(paymentUC)
+	paymentv1.RegisterPaymentServiceServer(grpcServer, paymentServer)
+
+	go func() {
+		log.Printf("[payment-service] grpc server starting on :%s", cfg.GRPCPort)
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatalf("[payment-service] grpc server error: %v", err)
+		}
+	}()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	<-ctx.Done()
+	log.Println("[payment-service] shutdown signal received")
+
+	done := make(chan struct{})
+	go func() {
+		grpcServer.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Println("[payment-service] stopped")
+	case <-time.After(10 * time.Second):
+		log.Println("[payment-service] forcing stop")
+		grpcServer.Stop()
 	}
 }
