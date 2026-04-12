@@ -22,7 +22,7 @@ func LoadConfig() Config {
 	return Config{
 		HTTPPort:           getEnv("PORT", "8080"),
 		GRPCPort:           getEnv("ORDER_GRPC_PORT", "50052"),
-		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/orders_db?sslmode=disable"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:0000@localhost:5432/orders_db?sslmode=disable"),
 		PaymentGRPCAddr:    getEnv("PAYMENT_GRPC_ADDR", "localhost:50051"),
 		PaymentCallTimeout: getEnvDuration("PAYMENT_CALL_TIMEOUT", 2*time.Second),
 	}
