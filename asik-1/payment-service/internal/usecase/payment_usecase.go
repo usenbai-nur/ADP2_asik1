@@ -18,16 +18,14 @@ func NewPaymentUseCase(repo domain.PaymentRepository) *PaymentUseCase {
 
 type AuthorizeInput struct {
 	OrderID string
-	Amount  int64 // cents
+	Amount  int64
 }
 
 type AuthorizeOutput struct {
 	Payment *domain.Payment
 }
 
-// Authorize processes a payment authorization request.
 func (uc *PaymentUseCase) Authorize(ctx context.Context, input AuthorizeInput) (*AuthorizeOutput, error) {
-	// Input validation
 	if input.OrderID == "" {
 		return nil, domain.ErrInvalidOrderID
 	}
@@ -35,7 +33,6 @@ func (uc *PaymentUseCase) Authorize(ctx context.Context, input AuthorizeInput) (
 		return nil, domain.ErrInvalidAmount
 	}
 
-	// Determine authorization status
 	status := domain.StatusAuthorized
 	if input.Amount > domain.MaxAuthorizedAmount {
 		status = domain.StatusDeclined
@@ -49,6 +46,7 @@ func (uc *PaymentUseCase) Authorize(ctx context.Context, input AuthorizeInput) (
 		Status:        status,
 		CreatedAt:     time.Now().UTC(),
 	}
+
 	if err := uc.repo.Save(ctx, payment); err != nil {
 		return nil, err
 	}
