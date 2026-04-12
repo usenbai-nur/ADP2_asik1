@@ -18,7 +18,7 @@ type Config struct {
 func LoadConfig() Config {
 	return Config{
 		GRPCPort:    getEnv("GRPC_PORT", "50051"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/payments_db?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:0000@localhost:5432/payments_db?sslmode=disable"),
 	}
 }
 
