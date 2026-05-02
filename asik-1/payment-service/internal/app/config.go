@@ -13,12 +13,14 @@ import (
 type Config struct {
 	GRPCPort    string
 	DatabaseURL string
+	RabbitMQURL string
 }
 
 func LoadConfig() Config {
 	return Config{
 		GRPCPort:    getEnv("GRPC_PORT", "50051"),
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:0000@localhost:5432/payments_db?sslmode=disable"),
+		RabbitMQURL: getEnv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
 	}
 }
 

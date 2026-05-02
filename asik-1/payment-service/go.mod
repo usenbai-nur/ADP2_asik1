@@ -5,7 +5,8 @@ go 1.24.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.12.3
-	github.com/usenbai-nur/ADP2_asik2_generated v1.0.3-0.20260420105200-dd98597214d3
+	github.com/rabbitmq/amqp091-go v1.11.0
+	github.com/usenbai-nur/ADP2_asik2_generated v1.0.2
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 )

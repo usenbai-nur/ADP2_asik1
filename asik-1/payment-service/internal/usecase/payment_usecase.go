@@ -9,16 +9,21 @@ import (
 )
 
 type PaymentUseCase struct {
-	repo domain.PaymentRepository
+	repo      domain.PaymentRepository
+	publisher domain.PaymentEventPublisher
 }
 
-func NewPaymentUseCase(repo domain.PaymentRepository) *PaymentUseCase {
-	return &PaymentUseCase{repo: repo}
+func NewPaymentUseCase(repo domain.PaymentRepository, publisher domain.PaymentEventPublisher) *PaymentUseCase {
+	return &PaymentUseCase{
+		repo:      repo,
+		publisher: publisher,
+	}
 }
 
 type AuthorizeInput struct {
-	OrderID string
-	Amount  int64
+	OrderID        string
+	Amount        int64
+	CustomerEmail string
 }
 
 type AuthorizeOutput struct {
@@ -29,6 +34,7 @@ func (uc *PaymentUseCase) Authorize(ctx context.Context, input AuthorizeInput) (
 	if input.OrderID == "" {
 		return nil, domain.ErrInvalidOrderID
 	}
+
 	if input.Amount <= 0 {
 		return nil, domain.ErrInvalidAmount
 	}
@@ -51,6 +57,20 @@ func (uc *PaymentUseCase) Authorize(ctx context.Context, input AuthorizeInput) (
 		return nil, err
 	}
 
+	if payment.Status == domain.StatusAuthorized && uc.publisher != nil {
+		event := domain.PaymentCompletedEvent{
+			EventID:       uuid.New().String(),
+			OrderID:       payment.OrderID,
+			Amount:        payment.Amount,
+			CustomerEmail: input.CustomerEmail,
+			Status:        payment.Status,
+		}
+
+		if err := uc.publisher.PublishPaymentCompleted(ctx, event); err != nil {
+			return nil, err
+		}
+	}
+
 	return &AuthorizeOutput{Payment: payment}, nil
 }
 
@@ -59,6 +79,7 @@ func (uc *PaymentUseCase) GetByOrderID(ctx context.Context, orderID string) (*do
 	if err != nil {
 		return nil, domain.ErrPaymentNotFound
 	}
+
 	return payment, nil
 }
 

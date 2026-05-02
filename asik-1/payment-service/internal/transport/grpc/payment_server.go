@@ -24,8 +24,9 @@ func NewPaymentServer(uc *usecase.PaymentUseCase) *PaymentServer {
 
 func (s *PaymentServer) ProcessPayment(ctx context.Context, req *paymentv1.PaymentRequest) (*paymentv1.PaymentResponse, error) {
 	output, err := s.paymentUseCase.Authorize(ctx, usecase.AuthorizeInput{
-		OrderID: req.GetOrderId(),
-		Amount:  req.GetAmount(),
+		OrderID:       req.GetOrderId(),
+		Amount:        req.GetAmount(),
+		CustomerEmail: "user@example.com",
 	})
 	if err != nil {
 		switch {
@@ -49,20 +50,6 @@ func (s *PaymentServer) GetPaymentByOrderID(ctx context.Context, req *paymentv1.
 	}
 
 	return toPaymentResponse(payment), nil
-}
-
-func (s *PaymentServer) GetPaymentStats(ctx context.Context, req *paymentv1.GetPaymentStatsRequest) (*paymentv1.PaymentStats, error) {
-	statsData, err := s.paymentUseCase.GetStats(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to fetch payment stats")
-	}
-
-	return &paymentv1.PaymentStats{
-		TotalCount:      statsData.TotalCount,
-		AuthorizedCount: statsData.AuthorizedCount,
-		DeclinedCount:   statsData.DeclinedCount,
-		TotalAmount:     statsData.TotalAmount,
-	}, nil
 }
 
 func toPaymentResponse(p *domain.Payment) *paymentv1.PaymentResponse {
