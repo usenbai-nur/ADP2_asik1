@@ -8,12 +8,12 @@ import (
 	"syscall"
 	"time"
 
-	paymentv1 "github.com/usenbai-nur/ADP2_asik2_generated/payment/v1"
-
 	"github.com/ap2/payment-service/internal/app"
+	"github.com/ap2/payment-service/internal/messaging"
 	"github.com/ap2/payment-service/internal/repository"
 	transportGRPC "github.com/ap2/payment-service/internal/transport/grpc"
 	"github.com/ap2/payment-service/internal/usecase"
+	paymentv1 "github.com/usenbai-nur/ADP2_asik2_generated/payment/v1"
 	grpcpkg "google.golang.org/grpc"
 )
 
@@ -27,7 +27,14 @@ func main() {
 	defer db.Close()
 
 	paymentRepo := repository.NewPostgresPaymentRepository(db)
-	paymentUC := usecase.NewPaymentUseCase(paymentRepo)
+
+	publisher, err := messaging.NewRabbitMQPublisher(cfg.RabbitMQURL)
+	if err != nil {
+		log.Fatalf("[payment-service] failed to connect rabbitmq: %v", err)
+	}
+	defer publisher.Close()
+
+	paymentUC := usecase.NewPaymentUseCase(paymentRepo, publisher)
 
 	listener, err := net.Listen("tcp", ":"+cfg.GRPCPort)
 	if err != nil {
