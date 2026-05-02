@@ -64,3 +64,28 @@ func (r *PostgresPaymentRepository) FindByOrderID(ctx context.Context, orderID s
 
 	return &p, nil
 }
+
+func (r *PostgresPaymentRepository) GetStats(ctx context.Context) (*domain.PaymentStats, error) {
+	const query = `
+		SELECT
+			COUNT(*) AS total_count,
+			COUNT(*) FILTER (WHERE status = 'Authorized') AS authorized_count,
+			COUNT(*) FILTER (WHERE status = 'Declined') AS declined_count,
+			COALESCE(SUM(amount), 0) AS total_amount
+		FROM payments
+	`
+
+	var stats domain.PaymentStats
+
+	err := r.db.QueryRowContext(ctx, query).Scan(
+		&stats.TotalCount,
+		&stats.AuthorizedCount,
+		&stats.DeclinedCount,
+		&stats.TotalAmount,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &stats, nil
+}

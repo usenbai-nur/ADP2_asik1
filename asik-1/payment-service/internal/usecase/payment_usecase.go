@@ -61,3 +61,7 @@ func (uc *PaymentUseCase) GetByOrderID(ctx context.Context, orderID string) (*do
 	}
 	return payment, nil
 }
+
+func (uc *PaymentUseCase) GetStats(ctx context.Context) (*domain.PaymentStats, error) {
+	return uc.repo.GetStats(ctx)
+}
