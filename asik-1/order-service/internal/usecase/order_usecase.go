@@ -13,17 +13,20 @@ type OrderUseCase struct {
 	repo          domain.OrderRepository
 	paymentClient domain.PaymentClient
 	publisher     domain.OrderStatusPublisher
+	cache         domain.OrderCache
 }
 
 func NewOrderUseCase(
 	repo domain.OrderRepository,
 	paymentClient domain.PaymentClient,
 	publisher domain.OrderStatusPublisher,
+	cache domain.OrderCache,
 ) *OrderUseCase {
 	return &OrderUseCase{
 		repo:          repo,
 		paymentClient: paymentClient,
 		publisher:     publisher,
+		cache:         cache,
 	}
 }
 
@@ -83,6 +86,8 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, input CreateOrderInput)
 			return nil, updateErr
 		}
 
+		uc.invalidateCache(ctx, order.ID)
+
 		order.Status = domain.StatusFailed
 		order.UpdatedAt = updatedAt
 
@@ -105,6 +110,8 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, input CreateOrderInput)
 		return nil, err
 	}
 
+	uc.invalidateCache(ctx, order.ID)
+
 	order.Status = newStatus
 	order.UpdatedAt = updatedAt
 
@@ -118,10 +125,22 @@ func (uc *OrderUseCase) CreateOrder(ctx context.Context, input CreateOrderInput)
 }
 
 func (uc *OrderUseCase) GetOrder(ctx context.Context, id string) (*domain.Order, error) {
+	if uc.cache != nil {
+		cachedOrder, err := uc.cache.Get(ctx, id)
+		if err == nil {
+			return cachedOrder, nil
+		}
+	}
+
 	order, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, domain.ErrOrderNotFound
 	}
+
+	if uc.cache != nil {
+		_ = uc.cache.Set(ctx, order)
+	}
+
 	return order, nil
 }
 
@@ -140,6 +159,8 @@ func (uc *OrderUseCase) CancelOrder(ctx context.Context, id string) (*domain.Ord
 		return nil, err
 	}
 
+	uc.invalidateCache(ctx, id)
+
 	order.Status = domain.StatusCancelled
 	order.UpdatedAt = updatedAt
 
@@ -154,4 +175,10 @@ func (uc *OrderUseCase) CancelOrder(ctx context.Context, id string) (*domain.Ord
 
 func (uc *OrderUseCase) GetOrderStats(ctx context.Context) (map[string]int, error) {
 	return uc.repo.CountByStatus(ctx)
+}
+
+func (uc *OrderUseCase) invalidateCache(ctx context.Context, orderID string) {
+	if uc.cache != nil {
+		_ = uc.cache.Delete(ctx, orderID)
+	}
 }

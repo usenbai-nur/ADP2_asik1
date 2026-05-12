@@ -13,6 +13,12 @@ type OrderRepository interface {
 	CountByStatus(ctx context.Context) (map[string]int, error)
 }
 
+type OrderCache interface {
+	Get(ctx context.Context, id string) (*Order, error)
+	Set(ctx context.Context, order *Order) error
+	Delete(ctx context.Context, id string) error
+}
+
 type PaymentResult struct {
 	TransactionID string
 	Status        string

@@ -16,6 +16,8 @@ type Config struct {
 	DatabaseURL        string
 	PaymentGRPCAddr    string
 	PaymentCallTimeout time.Duration
+	RedisAddr          string
+	CacheTTL           time.Duration
 }
 
 func LoadConfig() Config {
@@ -25,6 +27,8 @@ func LoadConfig() Config {
 		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:0000@localhost:5432/orders_db?sslmode=disable"),
 		PaymentGRPCAddr:    getEnv("PAYMENT_GRPC_ADDR", "localhost:50051"),
 		PaymentCallTimeout: getEnvDuration("PAYMENT_CALL_TIMEOUT", 2*time.Second),
+		RedisAddr:          getEnv("REDIS_ADDR", "localhost:6379"),
+		CacheTTL:           getEnvDuration("CACHE_TTL", 5*time.Minute),
 	}
 }
 
