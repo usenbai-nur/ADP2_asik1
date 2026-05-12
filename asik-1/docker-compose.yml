@@ -2,12 +2,13 @@ services:
   orders-db:
     image: postgres:16
     container_name: orders-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: orders_db
     ports:
-      - "5433:5432"
+      - "55433:5432"
     volumes:
       - orders_data:/var/lib/postgresql/data
       - ./order-service/migrations:/docker-entrypoint-initdb.d
@@ -15,12 +16,13 @@ services:
   payments-db:
     image: postgres:16
     container_name: payments-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: payments_db
     ports:
-      - "5434:5432"
+      - "55434:5432"
     volumes:
       - payments_data:/var/lib/postgresql/data
       - ./payment-service/migrations:/docker-entrypoint-initdb.d
@@ -28,14 +30,23 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
+    restart: unless-stopped
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
 
   payment-service:
     build:
       context: ./payment-service
     container_name: payment-service
+    restart: unless-stopped
     depends_on:
       - payments-db
       - rabbitmq
@@ -50,26 +61,38 @@ services:
     build:
       context: ./order-service
     container_name: order-service
+    restart: unless-stopped
     depends_on:
       - orders-db
       - payment-service
+      - redis
     environment:
       PORT: 8080
+      ORDER_GRPC_PORT: 50052
       DATABASE_URL: postgres://postgres:postgres@orders-db:5432/orders_db?sslmode=disable
       PAYMENT_GRPC_ADDR: payment-service:50051
       PAYMENT_CALL_TIMEOUT: 5s
+      REDIS_ADDR: redis:6379
+      CACHE_TTL: 5m
     ports:
       - "8080:8080"
+      - "50052:50052"
 
   notification-service:
     build:
       context: ./notification-service
     container_name: notification-service
+    restart: unless-stopped
     depends_on:
       - rabbitmq
+      - redis
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       PAYMENT_COMPLETED_QUEUE: payment.completed
+      REDIS_ADDR: redis:6379
+      PROVIDER_MODE: SIMULATED
+      MAX_RETRIES: 3
+      IDEMPOTENCY_TTL: 24h
 
 volumes:
   orders_data:
