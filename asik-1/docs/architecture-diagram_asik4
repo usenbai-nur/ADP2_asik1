@@ -1,0 +1,70 @@
+# Assignment 4 Architecture Diagram
+
+```text
+                          ┌──────────────────┐
+                          │      Client      │
+                          │ Postman / HTTP   │
+                          └────────┬─────────┘
+                                   │
+                                   │ REST API
+                                   v
+┌──────────────────────────────────────────────────────────────┐
+│                         Order Service                         │
+│                                                              │
+│  Responsibilities:                                           │
+│  - Create orders                                             │
+│  - Get order details                                         │
+│  - Update order status                                       │
+│  - Use Redis cache-aside                                     │
+└──────────────┬───────────────────────┬───────────────────────┘
+               │                       │
+               │ Cache check            │ gRPC payment request
+               v                       v
+┌──────────────────────┐      ┌──────────────────────────────┐
+│        Redis         │      │        Payment Service         │
+│                      │      │                              │
+│ order:{order_id}     │      │ Responsibilities:             │
+│ TTL: 5 minutes       │      │ - Authorize payment           │
+│ Cache-aside storage  │      │ - Store payment result        │
+└──────────────────────┘      └──────────────┬───────────────┘
+               ^                              │
+               │                              │
+               │ DB fallback / invalidation   │
+               v                              v
+┌──────────────────────┐      ┌──────────────────────────────┐
+│    Orders DB         │      │        Payments DB            │
+│   PostgreSQL         │      │        PostgreSQL             │
+└──────────────────────┘      └──────────────┬───────────────┘
+                                             │
+                                             │ publish event
+                                             │ payment.completed
+                                             v
+                                  ┌──────────────────────┐
+                                  │       RabbitMQ       │
+                                  │                      │
+                                  │ Queue:               │
+                                  │ payment.completed    │
+                                  └──────────┬───────────┘
+                                             │
+                                             │ consume event
+                                             v
+                         ┌────────────────────────────────────┐
+                         │       Notification Service          │
+                         │        Background Worker            │
+                         │                                    │
+                         │ Responsibilities:                  │
+                         │ - Consume payment events           │
+                         │ - Check idempotency                │
+                         │ - Retry failed provider calls      │
+                         │ - Use adapter pattern              │
+                         └──────────────┬─────────────────────┘
+                                        │
+                          ┌─────────────┴─────────────┐
+                          │                           │
+                          v                           v
+             ┌──────────────────────┐      ┌────────────────────────┐
+             │        Redis         │      │    Email Provider       │
+             │                      │      │                        │
+             │ notification:event:* │      │ SimulatedEmailSender    │
+             │ Idempotency storage  │      │ latency + failures      │
+             └──────────────────────┘      └────────────────────────┘

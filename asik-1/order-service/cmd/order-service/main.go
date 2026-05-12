@@ -42,6 +42,9 @@ func main() {
 	defer grpcConn.Close()
 
 	orderRepo := repository.NewPostgresOrderRepository(db)
+	orderCache := repository.NewRedisOrderCache(cfg.RedisAddr, cfg.CacheTTL)
+	defer orderCache.Close()
+
 	paymentClient := repository.NewGRPCPaymentClient(
 		paymentv1.NewPaymentServiceClient(grpcConn),
 		cfg.PaymentCallTimeout,
@@ -49,7 +52,7 @@ func main() {
 
 	statusHub := app.NewOrderStatusHub()
 
-	orderUC := usecase.NewOrderUseCase(orderRepo, paymentClient, statusHub)
+	orderUC := usecase.NewOrderUseCase(orderRepo, paymentClient, statusHub, orderCache)
 
 	orderHandler := transportHTTP.NewOrderHandler(orderUC)
 	orderGRPCServer := transportGRPC.NewOrderServer(orderRepo, statusHub)

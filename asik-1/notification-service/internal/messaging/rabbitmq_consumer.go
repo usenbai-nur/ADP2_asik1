@@ -5,22 +5,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
+	"time"
 
 	"github.com/ap2/notification-service/internal/domain"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQConsumer struct {
-	conn      *amqp.Connection
-	ch        *amqp.Channel
-	queueName string
-
-	mu        sync.Mutex
-	processed map[string]bool
+type IdempotencyStore interface {
+	IsProcessed(ctx context.Context, eventID string) (bool, error)
+	MarkProcessed(ctx context.Context, eventID string) error
 }
 
-func NewRabbitMQConsumer(url string, queueName string) (*RabbitMQConsumer, error) {
+type RabbitMQConsumer struct {
+	conn       *amqp.Connection
+	ch         *amqp.Channel
+	queueName  string
+	sender     domain.EmailSender
+	store      IdempotencyStore
+	maxRetries int
+}
+
+func NewRabbitMQConsumer(
+	url string,
+	queueName string,
+	sender domain.EmailSender,
+	store IdempotencyStore,
+	maxRetries int,
+) (*RabbitMQConsumer, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, fmt.Errorf("connect rabbitmq: %w", err)
@@ -53,10 +64,12 @@ func NewRabbitMQConsumer(url string, queueName string) (*RabbitMQConsumer, error
 	}
 
 	return &RabbitMQConsumer{
-		conn:      conn,
-		ch:        ch,
-		queueName: queueName,
-		processed: make(map[string]bool),
+		conn:       conn,
+		ch:         ch,
+		queueName:  queueName,
+		sender:     sender,
+		store:      store,
+		maxRetries: maxRetries,
 	}, nil
 }
 
@@ -86,7 +99,7 @@ func (c *RabbitMQConsumer) Start(ctx context.Context) error {
 				return nil
 			}
 
-			if err := c.handleMessage(msg); err != nil {
+			if err := c.handleMessage(ctx, msg); err != nil {
 				log.Printf("[notification-service] failed to process message: %v", err)
 
 				if nackErr := msg.Nack(false, true); nackErr != nil {
@@ -103,7 +116,7 @@ func (c *RabbitMQConsumer) Start(ctx context.Context) error {
 	}
 }
 
-func (c *RabbitMQConsumer) handleMessage(msg amqp.Delivery) error {
+func (c *RabbitMQConsumer) handleMessage(ctx context.Context, msg amqp.Delivery) error {
 	var event domain.PaymentCompletedEvent
 
 	if err := json.Unmarshal(msg.Body, &event); err != nil {
@@ -114,25 +127,47 @@ func (c *RabbitMQConsumer) handleMessage(msg amqp.Delivery) error {
 		return fmt.Errorf("event_id is empty")
 	}
 
-	c.mu.Lock()
-	if c.processed[event.EventID] {
-		c.mu.Unlock()
+	processed, err := c.store.IsProcessed(ctx, event.EventID)
+	if err != nil {
+		return err
+	}
+
+	if processed {
 		log.Printf("[notification-service] duplicate event ignored: %s", event.EventID)
 		return nil
 	}
 
-	c.processed[event.EventID] = true
-	c.mu.Unlock()
+	var lastErr error
 
-	log.Printf(
-		"[Notification] Sent email to %s for Order #%s. Amount: $%.2f. Status: %s",
-		event.CustomerEmail,
-		event.OrderID,
-		float64(event.Amount)/100,
-		event.Status,
-	)
+	for attempt := 1; attempt <= c.maxRetries; attempt++ {
+		lastErr = c.sender.SendPaymentNotification(ctx, event)
+		if lastErr == nil {
+			if err := c.store.MarkProcessed(ctx, event.EventID); err != nil {
+				return err
+			}
 
-	return nil
+			log.Printf("[notification-service] notification processed successfully event_id=%s", event.EventID)
+			return nil
+		}
+
+		backoff := time.Duration(1<<attempt) * time.Second
+
+		log.Printf(
+			"[notification-service] provider failed attempt=%d/%d error=%v retry_in=%s",
+			attempt,
+			c.maxRetries,
+			lastErr,
+			backoff,
+		)
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(backoff):
+		}
+	}
+
+	return fmt.Errorf("notification failed after retries: %w", lastErr)
 }
 
 func (c *RabbitMQConsumer) Close() error {
